@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+class Register extends StatefulWidget {
+  const Register({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
+  State<Register> createState() => _RegisterState();
 }
 
-class _LoginState extends State<Login> {
+class _RegisterState extends State<Register> {
   bool _isPasswordVisible = false;
-  bool _rememberMe = false;
+  bool _isConfirmPasswordVisible = false;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -35,7 +40,7 @@ class _LoginState extends State<Login> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.8,
+                  height: MediaQuery.of(context).size.height * 0.85,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -55,20 +60,42 @@ class _LoginState extends State<Login> {
                           const SizedBox(height: 40),
 
                           Text(
-                            'Login',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            'Register',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
 
                           const SizedBox(height: 8),
 
                           Text(
-                            'Enter your email and password to continue.',
+                            'Create your account to continue.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
 
                           const SizedBox(height: 32),
+
+                          TextFormField(
+                            controller: _usernameController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your username';
+                              }
+                              if (value.length < 3) {
+                                return 'Username must be at least 3 characters';
+                              }
+                              return null;
+                            },
+                            decoration: const InputDecoration(
+                              hintText: 'Username',
+                              border: UnderlineInputBorder(),
+                              enabledBorder: UnderlineInputBorder(),
+                              focusedBorder: UnderlineInputBorder(),
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
 
                           TextFormField(
                             controller: _emailController,
@@ -131,48 +158,55 @@ class _LoginState extends State<Login> {
                             ),
                           ),
 
-                          const SizedBox(height: 16),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Checkbox(
-                                      value: _rememberMe,
-                                      onChanged: (value) {
-                                        if (value == null) return;
-                                        setState(() {
-                                          _rememberMe = value;
-                                        });
-                                      },
-                                    ),
-                                    const Text('Remember me'),
-                                  ],
-                                ),
-                              ),
-
-                              TextButton(
-                                onPressed: () {},
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.grey,
-                                  overlayColor: Colors.transparent,
-                                ),
-                                child: const Text('Forgot password?'),
-                              ),
-                            ],
-                            ),
-
                           const SizedBox(height: 24),
+
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match';
+                              }
+
+                              return null;
+                            },
+                            obscureText: !_isConfirmPasswordVisible,
+                            decoration: InputDecoration(
+                              hintText: 'Confirm Password',
+                              border: const UnderlineInputBorder(),
+                              enabledBorder: const UnderlineInputBorder(),
+                              focusedBorder: const UnderlineInputBorder(),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isConfirmPasswordVisible
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isConfirmPasswordVisible =
+                                        !_isConfirmPasswordVisible;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
 
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: () {
                                 if (_formKey.currentState?.validate() ?? false) {
+                                  final username = _usernameController.text;
                                   final email = _emailController.text;
                                   final password = _passwordController.text;
 
+                                  print(username);
                                   print(email);
                                   print(password);
                                 }
@@ -180,14 +214,16 @@ class _LoginState extends State<Login> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF00C853),
                                 foregroundColor: Colors.white,
-                                elevation: 0, // remove sombra
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                               ),
                               child: const Text(
-                                'Sign in',
+                                'Sign Up',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -203,22 +239,20 @@ class _LoginState extends State<Login> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text(
-                              "Don't have an account?",
+                              'Already have an account?',
                               style: TextStyle(color: Colors.grey),
                             ),
                             TextButton(
                               onPressed: () {
-                                  Navigator.pushNamed(context, '/register');
+                                  Navigator.pushNamed(context, '/login');
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.black,
                                 overlayColor: Colors.transparent,
                               ),
                               child: const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                ),
+                                'Sign In',
+                                style: TextStyle(fontSize: 16),
                               ),
                             ),
                           ],
@@ -234,3 +268,4 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home.dart';
-// import 'screens/add_screen.dart';
+import 'screens/login.dart';
+import 'screens/register.dart';
 
 void main() {
   runApp(const KashFluxApp());
@@ -20,7 +21,8 @@ class KashFluxApp extends StatelessWidget {
       // todas as rotas da app
       routes: {
         '/': (context) => const Home(),
-        // '/add': (context) => const AddScreen(),
+        '/login': (context) => const Login(),
+        '/register': (context) => const Register(),
       },
     );
   }

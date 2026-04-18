@@ -46,6 +46,7 @@ class Sidebar extends StatelessWidget {
                 title: const Text('Login'),
                 onTap: () {
                 Navigator.pop(context);
+                Navigator.pushNamed(context, '/login');
                 },
             ),
 
