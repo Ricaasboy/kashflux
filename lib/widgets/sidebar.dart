@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../services/secure_storage_service.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key});
@@ -43,10 +44,19 @@ class Sidebar extends StatelessWidget {
 
             ListTile(
                 leading: const Icon(Icons.person),
-                title: const Text('Login'),
-                onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/login');
+                title: const Text('Logout'),
+                onTap: () async {
+                  Navigator.pop(context);
+
+                  await SecureStorageService.clearLoginData();
+
+                  if (!context.mounted) return;
+
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                    (route) => false,
+                  );
                 },
             ),
 

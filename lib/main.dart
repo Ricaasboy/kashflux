@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/auth_check.dart';
 import 'screens/home.dart';
 import 'screens/login.dart';
 import 'screens/register.dart';
@@ -14,13 +15,10 @@ class KashFluxApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
-      // página inicial
       initialRoute: '/',
-
-      // todas as rotas da app
       routes: {
-        '/': (context) => const Home(),
+        '/': (context) => const AuthCheck(),
+        '/home': (context) => const Home(),
         '/login': (context) => const Login(),
         '/register': (context) => const Register(),
       },

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../services/secure_storage_service.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -168,13 +170,38 @@ class _LoginState extends State<Login> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 if (_formKey.currentState?.validate() ?? false) {
-                                  final email = _emailController.text;
-                                  final password = _passwordController.text;
+                                  final result = await AuthService.login(
+                                    email: _emailController.text.trim(),
+                                    password: _passwordController.text,
+                                  );
 
-                                  print(email);
-                                  print(password);
+                                  if (!mounted) return;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result['message'] ?? 'No response from server'),
+                                    ),
+                                  );
+
+                                  if (result['success'] == true) {
+                                    if (_rememberMe) {
+                                      await SecureStorageService.saveLoginData(
+                                        token: result['token'],
+                                        username: result['user']['username'],
+                                        email: result['user']['email'],
+                                      );
+
+                                      if (!mounted) return;
+                                      Navigator.pushReplacementNamed(context, '/');
+                                    } else {
+                                      await SecureStorageService.clearLoginData();
+
+                                      if (!mounted) return;
+                                      Navigator.pushReplacementNamed(context, '/home');
+                                    }
+                                  }
                                 }
                               },
                               style: ElevatedButton.styleFrom(
@@ -234,3 +261,4 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -200,15 +201,30 @@ class _RegisterState extends State<Register> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 if (_formKey.currentState?.validate() ?? false) {
-                                  final username = _usernameController.text;
-                                  final email = _emailController.text;
-                                  final password = _passwordController.text;
 
-                                  print(username);
-                                  print(email);
-                                  print(password);
+                                  final result = await AuthService.register(
+                                    username: _usernameController.text.trim(),
+                                    email: _emailController.text.trim(),
+                                    password: _passwordController.text,
+                                  );
+
+                                  if (!mounted) return;
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result['message']),
+                                    ),
+                                  );
+
+                                  if (result['success'] == true) {
+                                    Navigator.pushNamedAndRemoveUntil(
+                                      context,
+                                      '/login',
+                                      (route) => false,
+                                    );
+                                  }
                                 }
                               },
                               style: ElevatedButton.styleFrom(
@@ -244,7 +260,11 @@ class _RegisterState extends State<Register> {
                             ),
                             TextButton(
                               onPressed: () {
-                                  Navigator.pushNamed(context, '/login');
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/login',
+                                  (route) => false,
+                                );
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.black,
