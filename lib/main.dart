@@ -3,6 +3,8 @@ import 'screens/auth_check.dart';
 import 'screens/home.dart';
 import 'screens/login.dart';
 import 'screens/register.dart';
+import 'screens/add_operation.dart';
+import 'screens/add_scheduled_operation.dart';
 
 void main() {
   runApp(const KashFluxApp());
@@ -21,6 +23,8 @@ class KashFluxApp extends StatelessWidget {
         '/home': (context) => const Home(),
         '/login': (context) => const Login(),
         '/register': (context) => const Register(),
+        '/add-operation': (context) => const AddOperation(),
+        '/add-scheduled-operation': (context) => const AddScheduledOperation(),
       },
     );
   }

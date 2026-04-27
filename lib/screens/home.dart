@@ -1,19 +1,94 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../widgets/bottom_navbar.dart';
+import '../widgets/sidebar.dart';
+import '../services/home_service.dart';
+import '../services/secure_storage_service.dart';
+import '../services/scheduled_operation_service.dart';
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   const Home({super.key});
 
   @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  bool isLoading = true;
+
+  double balance = 0;
+  double income = 0;
+  double expenses = 0;
+
+  List categories = [];
+  List operations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadHomeData();
+  }
+
+  Future<void> loadHomeData() async {
+    await ScheduledOperationService.processScheduledOperations();
+
+    final email = await SecureStorageService.getEmail();
+
+    if (email == null || email.isEmpty) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
+    final result = await HomeService.getHomeData(email: email);
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      setState(() {
+        balance = double.parse(result['balance'].toString());
+        income = double.parse(result['income'].toString());
+        expenses = double.parse(result['expenses'].toString());
+        categories = result['categories'] ?? [];
+        operations = result['last_operations'] ?? [];
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  String money(double value) {
+    return '€ ${value.toStringAsFixed(2)}';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
+      drawer: const Sidebar(),
       appBar: AppBar(
         centerTitle: true,
         title: Image.asset(
           'assets/imgs/mini_logo.png',
           height: 30,
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: ScrollConfiguration(
         behavior: NoGlowScrollBehavior(),
@@ -48,9 +123,9 @@ class Home extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      '€ 5,480.35',
-                      style: TextStyle(
+                    Text(
+                      money(balance),
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -62,7 +137,7 @@ class Home extends StatelessWidget {
                         Expanded(
                           child: _miniCard(
                             title: 'Income',
-                            value: '€ 2,000',
+                            value: money(income),
                             icon: Icons.arrow_upward,
                             iconColor: const Color(0xFF4CAF50),
                           ),
@@ -71,7 +146,7 @@ class Home extends StatelessWidget {
                         Expanded(
                           child: _miniCard(
                             title: 'Expenses',
-                            value: '€ 750',
+                            value: money(expenses),
                             icon: Icons.arrow_downward,
                             iconColor: const Color(0xFFE53935),
                           ),
@@ -95,57 +170,48 @@ class Home extends StatelessWidget {
               const SizedBox(height: 14),
               SizedBox(
                 height: 160,
-                child: ListView(
+                child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  physics: const ClampingScrollPhysics(),
-                  children: const [
-                    _OperationCard(
-                      title: 'Salary',
-                      amount: '+ €2,000',
-                      date: 'Today',
-                      icon: Icons.arrow_downward,
-                      iconColor: Color(0xFF4CAF50),
-                    ),
-                    SizedBox(width: 12),
-                    _OperationCard(
-                      title: 'Supermarket',
-                      amount: '- €50',
-                      date: 'Today',
-                      icon: Icons.shopping_cart,
-                      iconColor: Color(0xFFE53935),
-                    ),
-                    SizedBox(width: 12),
-                    _OperationCard(
-                      title: 'Transport',
-                      amount: '- €15',
-                      date: 'Yesterday',
-                      icon: Icons.directions_bus,
-                      iconColor: Color(0xFFE53935),
-                    ),
-                    SizedBox(width: 12),
-                    _OperationCard(
-                      title: 'Freelance',
-                      amount: '+ €320',
-                      date: 'Sep 12',
-                      icon: Icons.work,
-                      iconColor: Color(0xFF4CAF50),
-                    ),
-                    SizedBox(width: 12),
-                    _OperationCard(
-                      title: 'Restaurant',
-                      amount: '- €22',
-                      date: 'Sep 11',
-                      icon: Icons.restaurant,
-                      iconColor: Color(0xFFE53935),
-                    ),
-                  ],
+                  primary: false,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: operations.length,
+                  separatorBuilder: (context, index) {
+                    return const SizedBox(width: 12);
+                  },
+                  itemBuilder: (context, index) {
+                    final operation = operations[index];
+                    final type = operation['type'].toString();
+                    final amount = double.parse(operation['amount'].toString());
+                    final isIncome = type == 'income';
+
+                    return _OperationCard(
+                      title: operation['title'].toString(),
+                      amount: '${isIncome ? '+' : '-'} ${money(amount)}',
+                      date: operation['date'].toString(),
+                      icon: isIncome
+                          ? Icons.arrow_downward
+                          : Icons.shopping_cart,
+                      iconColor: isIncome
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFFE53935),
+                    );
+                  },
                 ),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const BottomNavbar(currentIndex: 0),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF00C853),
+        onPressed: () {
+          Navigator.pushNamed(context, '/add-operation');
+        },
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 
@@ -202,6 +268,14 @@ class Home extends StatelessWidget {
   }
 
   Widget _categoryExpenseCard() {
+    final colors = [
+      const Color(0xFFFF9800),
+      const Color(0xFF8BC34A),
+      const Color(0xFF3F51B5),
+      const Color(0xFF9E9E9E),
+      const Color(0xFFE53935),
+    ];
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -228,80 +302,59 @@ class Home extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                flex: 4,
-                child: SizedBox(
-                  height: 140,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 3,
-                      centerSpaceRadius: 28,
-                      sections: [
-                        PieChartSectionData(
-                          value: 35,
-                          color: const Color(0xFFFF9800),
-                          title: '',
-                          radius: 18,
-                        ),
-                        PieChartSectionData(
-                          value: 25,
-                          color: const Color(0xFF8BC34A),
-                          title: '',
-                          radius: 18,
-                        ),
-                        PieChartSectionData(
-                          value: 20,
-                          color: const Color(0xFF3F51B5),
-                          title: '',
-                          radius: 18,
-                        ),
-                        PieChartSectionData(
-                          value: 20,
-                          color: const Color(0xFF9E9E9E),
-                          title: '',
-                          radius: 18,
-                        ),
-                      ],
+          if (categories.isEmpty)
+            const Text(
+              'No expenses yet',
+              style: TextStyle(color: Colors.black54),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  flex: 4,
+                  child: SizedBox(
+                    height: 140,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 3,
+                        centerSpaceRadius: 28,
+                        sections: List.generate(categories.length, (index) {
+                          final item = categories[index];
+                          final total = double.parse(item['total'].toString());
+
+                          return PieChartSectionData(
+                            value: total,
+                            color: colors[index % colors.length],
+                            title: '',
+                            radius: 18,
+                          );
+                        }),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                flex: 5,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _CategoryLegendItem(
-                      color: Color(0xFFFF9800),
-                      title: 'Housing',
-                      value: '€ 350.00',
-                    ),
-                    SizedBox(height: 10),
-                    _CategoryLegendItem(
-                      color: Color(0xFF8BC34A),
-                      title: 'Transport',
-                      value: '€ 180.00',
-                    ),
-                    SizedBox(height: 10),
-                    _CategoryLegendItem(
-                      color: Color(0xFF3F51B5),
-                      title: 'Food',
-                      value: '€ 275.00',
-                    ),
-                    SizedBox(height: 10),
-                    _CategoryLegendItem(
-                      color: Color(0xFF9E9E9E),
-                      title: 'Other',
-                      value: '€ 110.00',
-                    ),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(categories.length, (index) {
+                      final item = categories[index];
+                      final total = double.parse(item['total'].toString());
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _CategoryLegendItem(
+                          color: colors[index % colors.length],
+                          title: item['category'].toString(),
+                          value: money(total),
+                        ),
+                      );
+                    }),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );

@@ -36,6 +36,15 @@ class Sidebar extends StatelessWidget {
                         Navigator.pop(context);
                     },
                     ),
+
+                    ListTile(
+                      leading: const Icon(Icons.schedule),
+                      title: const Text('Scheduled'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/add-scheduled-operation');
+                      },
+                    ),
                 ],
                 ),
             ),
